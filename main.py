@@ -1,11 +1,19 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from enum import Enum
+from pydantic import BaseModel
+from typing import Annotated
 
 
 class ModelName(str, Enum):
     alexnet = "alexnet"
     resnet = "resnet"
     lenet = "lenet"
+
+class Item(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tax: float | None = None
 
 
 app = FastAPI()
@@ -53,3 +61,26 @@ async def read_item_by_id(item_id, q: str | None = None):
     if q:
         return {"item_id": item_id, "q": q}
     return {"item_id": item_id}
+
+# optional query parameters with annotations
+@app.get("/q_items/")
+async def query_items(q: Annotated[str | None, Query(max_length=50)] = None):
+    results = {"items" : [{"item_id": "foo"}, {"item_id": "bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+
+# required query parameters with annotations
+@app.get("/q_items_required/")
+async def query_items_required(q: Annotated[str, Query(min_length=3, max_length=50)]):
+    results = {"items" : [{"item_id": "foo"}, {"item_id": "bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+#request body
+@app.post("/items/")
+async def create_item(item: Item):
+    return item
+
